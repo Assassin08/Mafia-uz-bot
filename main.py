@@ -1,146 +1,113 @@
-import logging
-import asyncio
-import re
-import os
-from datetime import datetime, timedelta
-from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, ChatPermissions
-from aiogram.enums import ChatMemberStatus
+# ==================== CHANNELS ====================
 
-# Tokenni Render saytida xavfsiz kiritamiz
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+@dp.message(F.text == ".channels")
+async def cmd_channels(message: Message):
+    await message.answer(
+        "⛓ @mafia_uzbekis Official Club Projects:\n\n"
+        "📜 Qoidalar kanali — O'yin qoidalari va qonunlar.\n"
+        "📸 Zapallar kanali — Qiziqarli lahzalar va fosh etishlar."
+    )
 
-logging.basicConfig(level=logging.INFO)
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
 
-warns_db = {}
+# ==================== HELP ====================
 
-async def is_admin(message: Message) -> bool:
-    member = await message.chat.get_member(message.from_user.id)
-    return member.status in [ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR]
+@dp.message(F.text == ".help")
+async def cmd_help_list(message: Message):
+    await message.answer(
+        "🕵️‍♂️ @mafia_uzbekis Bot Commands List:\n\n"
 
-def parse_time(text: str):
-    match = re.search(r'(\d+)\s*([mhd])', text.lower())
-    if not match:
-        return None, text
-    value = int(match.group(1))
-    unit = match.group(2)
-    if unit == 'm': duration = timedelta(minutes=value)
-    elif unit == 'h': duration = timedelta(hours=value)
-    elif unit == 'd': duration = timedelta(days=value)
-    else: return None, text
-    clean_reason = text.replace(match.group(0), "").strip()
-    return duration, clean_reason
+        "👑 Admin Management:\n"
+        "🔹 .admin / .unadmin\n"
+        "🔹 .muter / .unmuter\n"
+        "🔹 .moderator / .unmoderator\n\n"
 
-@dp.message(F.text == ".admin")
-async def cmd_admin(message: Message):
-    if not await is_admin(message) or not message.reply_to_message: return
-    try:
-        await bot.promote_chat_member(
-            chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id,
-            can_manage_chat=True, can_delete_messages=True, can_restrict_members=True, can_invite_users=True
+        "🚫 Moderation & Punishment:\n"
+        "🔹 .mute [time] [reason] / .unmute\n"
+        "🔹 .warn / .unwarn\n"
+        "🔹 .ban / .unban\n"
+        "🔹 .del\n\n"
+
+        "⚙️ Group Controls & Fun:\n"
+        "🔹 .night / .day\n"
+        "🔹 .channels\n"
+        "🔹 .shoot\n"
+        "🔹 .check"
+    )
+
+
+# ==================== FUN COMMANDS ====================
+
+@dp.message(F.text == ".shoot")
+async def cmd_shoot(message: Message):
+    if not message.reply_to_message:
+        await message.reply(
+            "❓ Reply to someone's message to shoot them."
         )
-        await message.answer(f"✅ {message.reply_to_message.from_user.mention_html()} admin qilindi!")
-    except Exception: pass
+        return
 
-@dp.message(F.text == ".muter")
-async def cmd_muter(message: Message):
-    if not await is_admin(message) or not message.reply_to_message: return
-    try:
-        await bot.promote_chat_member(
-            chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id,
-            can_manage_chat=True, can_restrict_members=True
+    target = message.reply_to_message.from_user.mention_html()
+    admin = message.from_user.mention_html()
+
+    await message.answer(
+        f"🕵️‍♂️ By the order of Mafia Don {admin}, "
+        f"a silent bullet hit {target}... 🔫💀"
+    )
+
+
+@dp.message(F.text == ".check")
+async def cmd_check(message: Message):
+    if not message.reply_to_message:
+        await message.reply(
+            "❓ Reply to someone's message to investigate their role."
         )
-        await message.answer(f"🤫 {message.reply_to_message.from_user.mention_html()} endi mute qila oladi!")
-    except Exception: pass
+        return
 
-@dp.message(F.text == ".moderator")
-async def cmd_moderator(message: Message):
-    if not await is_admin(message) or not message.reply_to_message: return
-    try:
-        await bot.promote_chat_member(
-            chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id,
-            can_manage_chat=True, can_delete_messages=True, can_restrict_members=True,
-            can_promote_members=True, can_invite_users=True, can_change_info=True
-        )
-        await message.answer(f"👑 {message.reply_to_message.from_user.mention_html()} moderator qilindi!")
-    except Exception: pass
+    target = message.reply_to_message.from_user.mention_html()
 
-@dp.message(F.text.in_([".unadmin", ".unmuter", ".unmoderator"]))
-async def cmd_unadmin(message: Message):
-    if not await is_admin(message) or not message.reply_to_message: return
-    try:
-        await bot.promote_chat_member(
-            chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id,
-            can_manage_chat=False, can_delete_messages=False, can_restrict_members=False,
-            can_promote_members=False, can_invite_users=False, can_change_info=False
-        )
-        await message.answer(f"❌ {message.reply_to_message.from_user.mention_html()} huquqlari olib tashlandi.")
-    except Exception: pass
+    roles = [
+        "🔴 BLACK (Mafia)",
+        "⚪️ WHITE (Citizen)",
+        "🔴 BLACK (Don Mafia)",
+        "🔵 BLUE (Doctor)"
+    ]
 
-@dp.message(F.text.startswith(".mute"))
-async def cmd_mute(message: Message):
-    if not await is_admin(message) or not message.reply_to_message: return
-    args = message.text[5:].strip()
-    duration, reason = parse_time(args)
-    permissions = ChatPermissions(can_send_messages=False, can_send_media_messages=False, can_send_other_messages=False)
-    until_date = datetime.now() + duration if duration else None
-    try:
-        await bot.restrict_chat_member(chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id, permissions=permissions, until_date=until_date)
-        time_str = f"{duration}" if duration else "Abadiy"
-        reason_str = f"\n📝 Sabab: {reason}" if reason else ""
-        await message.answer(f"🤐 {message.reply_to_message.from_user.mention_html()} mute qilindi!\n⏱ Muddat: {time_str}{reason_str}")
-    except Exception: pass
+    chosen_role = random.choice(roles)
 
-@dp.message(F.text == ".warn")
-async def cmd_warn(message: Message):
-    if not await is_admin(message) or not message.reply_to_message: return
-    user_id = message.reply_to_message.from_user.id
-    warns_db[user_id] = warns_db.get(user_id, 0) + 1
-    if warns_db[user_id] >= 3:
-        warns_db[user_id] = 0
-        try:
-            permissions = ChatPermissions(can_send_messages=False, can_send_media_messages=False)
-            await bot.restrict_chat_member(chat_id=message.chat.id, user_id=user_id, permissions=permissions, until_date=datetime.now() + timedelta(days=1))
-            await message.answer(f"🚨 {message.reply_to_message.from_user.mention_html()} 3ta ogohlantirish bilan 24 soatga mute qilindi!")
-        except Exception: pass
-    else:
-        await message.answer(f"⚠️ {message.reply_to_message.from_user.mention_html()} ogohlantirish oldi: {warns_db[user_id]}/3")
+    await message.answer(
+        f"🔍 Detective investigated {target} tonight...\n"
+        f"Result: {chosen_role}"
+    )
 
-@dp.message(F.text == ".del")
-async def cmd_del(message: Message):
-    if not await is_admin(message) or not message.reply_to_message: return
-    try:
-        await bot.delete_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
-        await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
-    except Exception: pass
 
-@dp.message(F.text == ".ban")
-async def cmd_ban(message: Message):
-    if not await is_admin(message) or not message.reply_to_message: return
-    try:
-        await bot.ban_chat_member(chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id)
-        await message.answer(f"🚷 {message.reply_to_message.from_user.mention_html()} BAN qilindi!")
-    except Exception: pass
+# ==================== SERVER CONNECTION ====================
 
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-from aiohttp import web
-
-async def on_startup(bot: Bot) -> None:
+async def on_startup(bot: Bot):
     await bot.delete_webhook(drop_pending_updates=True)
     asyncio.create_task(dp.start_polling(bot))
 
+
 def main():
     app = web.Application()
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
-    setup_application(app, dp, bot=bot)
-    app.on_startup.append(lambda _: on_startup(bot))
 
-    # Render talab qiladigan portni faollashtirish
+    SimpleRequestHandler(
+        dispatcher=dp,
+        bot=bot
+    ).register(app, path="/webhook")
+
+    setup_application(app, dp, bot=bot)
+
+    app.on_startup.append(
+        lambda _: on_startup(bot)
+    )
+
     port = int(os.getenv("PORT", 10000))
-    web.run_app(app, host="0.0.0.0", port=port)
+
+    web.run_app(
+        app,
+        host="0.0.0.0",
+        port=port
+    )
+
 
 if __name__ == "__main__":
     main()
-
