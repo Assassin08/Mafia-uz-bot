@@ -124,8 +124,23 @@ async def cmd_ban(message: Message):
         await message.answer(f"🚷 {message.reply_to_message.from_user.mention_html()} BAN qilindi!")
     except Exception: pass
 
-async def main():
-    await dp.start_polling(bot)
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiohttp import web
+
+async def on_startup(bot: Bot) -> None:
+    await bot.delete_webhook(drop_pending_updates=True)
+    asyncio.create_task(dp.start_polling(bot))
+
+def main():
+    app = web.Application()
+    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
+    setup_application(app, dp, bot=bot)
+    app.on_startup.append(lambda _: on_startup(bot))
+
+    # Render talab qiladigan portni faollashtirish
+    port = int(os.getenv("PORT", 10000))
+    web.run_app(app, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
+
