@@ -376,10 +376,22 @@ async def handle_info_buttons(callback: CallbackQuery):
         if action == "mute":
             # 1 soatga mute qilish huquqlari
             permissions = ChatPermissions(can_send_messages=False, can_send_media_messages=False, can_send_other_messages=False)
-            until_date = datetime.now() + timedelta(hours=1)
+            until_date = datetime.utcnow() + timedelta(hours=1)
             await callback.bot.restrict_chat_member(chat_id=callback.message.chat.id, user_id=target_id, permissions=permissions, until_date=until_date)
             await callback.message.answer(f"🤫 Foydalanuvchi admin tomonidan inline tugma orqali 1 soatga mut qilindi.")
             
+        elif action == "unmute":
+            # Mutedan chiqarish huquqlari (Qayta tiklandi)
+            permissions = ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_polls=True, can_send_other_messages=True)
+            await callback.bot.restrict_chat_member(chat_id=callback.message.chat.id, user_id=target_id, permissions=permissions)
+            await callback.message.answer(f"🔊 Foydalanuvchi admin tomonidan inline tugma orqali mutdan chiqarildi.")
+            
+        await callback.answer("Muvaffaqiyatli bajarildi!")
+        await callback.message.delete() # Eski ma'lumotlar oynasini yopish
+        
+    except Exception as e:
+        await callback.answer("Xatolik yuz berdi yoki botda adminlik huquqi kam.", show_alert=True)
+
 @dp.message(F.text == ".unmute")
 async def cmd_unmute(message: Message):
     if not await is_admin(message) or not message.reply_to_message: return
@@ -387,7 +399,7 @@ async def cmd_unmute(message: Message):
     try:
         await bot.restrict_chat_member(chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id, permissions=permissions)
         await message.answer(f"🔊 {message.reply_to_message.from_user.mention_html()} has been unmuted!", parse_mode="HTML")
-    except Exception: pass  # <-- MANA SHU YOPUVCHI BLOK TUSHIB QOLGAN EDI
+    except Exception: pass
 
 # ==================== FUN COMMANDS ====================
 
