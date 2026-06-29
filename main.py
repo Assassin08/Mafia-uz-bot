@@ -5,10 +5,12 @@ import os
 import random
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, ChatPermissions
+# Bu yerga kerakli barcha inline va boshqaruv turlari qo'shildi:
+from aiogram.types import Message, ChatPermissions, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.enums import ChatMemberStatus
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
+
 
 # Tokenni Render saytida xavfsiz o'qiydi
 BOT_TOKEN = os.getenv("BOT_TOKEN")
