@@ -111,7 +111,7 @@ async def cmd_unmoderator(message: Message):
         await message.answer(f"❌ {message.reply_to_message.from_user.mention_html()} lost moderator privileges.")
     except Exception: pass
 
-        @dp.message(F.text == ".main")
+@dp.message(F.text == ".main")
 async def cmd_main_admin(message: Message):
     # Buyruq bergan odam admin ekanligini va biror xabarga reply qilinganini tekshirish
     if not await is_admin(message) or not message.reply_to_message: 
@@ -142,7 +142,7 @@ async def cmd_main_admin(message: Message):
     except Exception as e:
         await message.answer("❌ Botda ushbu huquqlarni berish uchun ruxsat yetarli emas (Bot o'zi to'liq admin bo'lishi kerak).")
 
-        @dp.message(F.text == ".unmain")
+@dp.message(F.text == ".unmain")
 async def cmd_unmain_admin(message: Message):
     # Buyruq bergan odam admin ekanligini va biror xabarga reply qilinganini tekshirish
     if not await is_admin(message) or not message.reply_to_message: 
