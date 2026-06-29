@@ -420,6 +420,32 @@ async def cmd_shoot(message: Message):
     admin = message.from_user.mention_html()
     await message.answer(f"🕵️‍♂️ Mafiya Doni {admin} buyrug'iga ko'ra, ovozsiz o'q {target}ga tegdi... 🔫💀")
 
+@dp.message(F.text == ".crush")
+async def cmd_crush(message: Message):
+    # Agar hech kimga reply qilinmagan bo'lsa, ogohlantirish beradi
+    if not message.reply_to_message:
+        await message.reply(
+            "❓ Kimnidir yaxshi ko'rishingizni aytish uchun uning xabariga reply (javob) qiling."
+        )
+        return
+
+    # Buyruq bergan va reply qilingan foydalanuvchilar niki
+    lover = message.from_user.mention_html()
+    target = message.reply_to_message.from_user.mention_html()
+
+    # Agar foydalanuvchi o'ziga o'zi reply qilsa
+    if message.from_user.id == message.reply_to_message.from_user.id:
+        await message.answer(f"❤️ {lover} o'z-o'ziga oshiq bo'lib qoldi! Narsissizm ham kerak-da... 😂")
+        return
+
+    # Guruhga yuboriladigan chiroyli matn
+    await message.answer(
+        f"💘 Ohho, guruhimizda yangi juftlikmi?\n\n"
+        f"💞 {lover} kutilmaganda {target} ga oshiq bo'lib qoldi! 😍✨\n"
+        f"Baxtli bo'linglar! 🥳"
+    )
+
+
 @dp.message(F.text == ".check")
 async def cmd_check(message: Message):
     if not message.reply_to_message:
