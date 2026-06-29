@@ -381,7 +381,7 @@ async def handle_ping(request):
     return web.Response(text="Mafia Bot muvaffaqiyatli ishlayapti!", status=200)
 
 async def on_startup(bot: Bot) -> None:
-    webhook_url = "https://onrender.com"
+    webhook_url = "https://mafia-uz-bot.onrender.com"
     await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
     logging.info(f"Webhook o'rnatildi: {webhook_url}")
 
