@@ -254,6 +254,7 @@ async def cmd_unban(message: Message):
     try:
         await bot.unban_chat_member(chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id)
         await message.answer(f"🔓 {message.reply_to_message.from_user.mention_html()} bandan chiqarildi!")
+    except Exception: pass
 
 
 # ==================== ADVANCED & INTERACTIVE CONTROLS ====================
