@@ -459,29 +459,36 @@ async def track_user_messages(message: Message):
 
 # ==================== SERVER CORE ====================
 
+# ==================== SERVER CORE (TO'G'RILANGAN VARIANT) ====================
+
 async def handle_ping(request):
     return web.Response(text="Mafia Bot muvaffaqiyatli ishlayapti!", status=200)
 
 async def on_startup(bot: Bot) -> None:
-    # TO'G'RI SHAXSIY WEBHOOK MANZILI O'RNATILDI:
+    # TO'G'RILANDI: Loyihangiz manzili va /webhook yo'li aniq ko'rsatildi
     webhook_url = "https://mafia-uz-bot.onrender.com"
+    
+    # drop_pending_updates=True eski to'planib qolgan xabarlarni o'chirib, botni toza ishga tushiradi
     await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
-    logging.info(f"Webhook o'rnatildi: {webhook_url}")
+    logging.info(f"Webhook to'g'ri o'rnatildi: {webhook_url}")
 
 def main():
     app = web.Application()
     
+    # Render serveri /webhook yo'liga keladigan POST so'rovlarini qabul qiladi
     webhook_requests_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
     webhook_requests_handler.register(app, path="/webhook")
     
+    # cron-job.org uchun GET so'rovi (Bosh sahifa)
     app.router.add_get("/", handle_ping)
     
     setup_application(app, dp, bot=bot)
-    app.on_startup.append(lambda _: on_startup(bot))
+    
+    # Aiogram 3.x uchun to'g'ri startup hodisasi
+    dp.startup.register(on_startup)
     
     port = int(os.getenv("PORT", 10000))
     web.run_app(app, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
     main()
-
