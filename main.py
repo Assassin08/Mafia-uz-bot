@@ -13,7 +13,7 @@ from aiohttp import web
 
 
 # Tokenni Render saytida xavfsiz o'qiydi
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("8865841570:AAHpEjp4pqu9c_KnUZL6amQz5Cx7q-j6q5I")
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
