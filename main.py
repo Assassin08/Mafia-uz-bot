@@ -5,21 +5,21 @@ import os
 import random
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F
-# Bu yerga kerakli barcha inline va boshqaruv turlari qo'shildi:
 from aiogram.types import Message, ChatPermissions, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.enums import ChatMemberStatus
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
-
-# Tokenni Render saytida xavfsiz o'qiydi
-BOT_TOKEN = os.getenv("8865841570:AAHpEjp4pqu9c_KnUZL6amQz5Cx7q-j6q5I")
+# TO'G'RI VARIANT: Token to'g'ridan-to'g'ri o'zgaruvchiga tenglashtirildi
+BOT_TOKEN = "8865841570:AAHpEjp4pqu9c_KnUZL6amQz5Cx7q-j6q5I"
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# Ma'lumotlar bazalari (Eng chetdan, xatosiz yozildi)
 warns_db = {}
+messages_db = {}
 
 async def is_admin(message: Message) -> bool:
     # Guruh nomidan yozgan anonim adminlarni ham to'g'ri tekshirish qo'shildi
@@ -311,28 +311,6 @@ async def cmd_help_list(message: Message):
         "🔹 .admin / .unadmin\n"
     )
 
-        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-
-# Xabarlar soni va birinchi ko'rilgan vaqtni saqlash uchun baza (Kodni tepasiga qo'shing)
-# warns_db = {} qatori tagiga yoziladi:
-messages_db = {}  
-
-# Har bir yozilgan xabarni hisoblab borish uchun umumiy handler
-@dp.message(F.chat.type.in_({"supergroup", "group"}))
-async def track_user_messages(message: Message):
-    # Agar xabar buyruq bo'lsa, uni hisoblamaslik uchun tekshiruv
-    if message.text and message.text.startswith("."):
-        return
-        
-    user_id = message.from_user.id
-    current_time = datetime.now().strftime("%d.%m.%Y")
-    
-    if user_id not in messages_db:
-        messages_db[user_id] = {"count": 1, "joined": current_time}
-    else:
-        messages_db[user_id]["count"] += 1
-
-
 # ==================== .INFO BUYRUG'I ====================
 
 @dp.message(F.text == ".info")
@@ -370,7 +348,7 @@ async def cmd_info(message: Message):
         f"⚙️ **Hozirgi holati:** {status_str}"
     )
     
-    # Inline tugmalarni yaratish (Faqat adminlar boshqara olishi uchun callback_data tarkibiga target va chat kiritiladi)
+    # Inline tugmalarni yaratish
     buttons = []
     if is_muted:
         buttons.append([InlineKeyboardButton(text="🔊 Mutedan chiqarish", callback_data=f"unmute:{user_id}")])
@@ -380,7 +358,6 @@ async def cmd_info(message: Message):
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     # Bot crash bo'lib o'chib qolmasligi uchun HTML formatlash yoqildi
     await message.answer(info_text, reply_markup=keyboard, parse_mode="HTML")
-
 
 # ==================== TUGMALARNI QABUL QILUVCHI (CALLBACK HANDLER) ====================
 
