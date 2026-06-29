@@ -109,6 +109,66 @@ async def cmd_unmoderator(message: Message):
         await message.answer(f"❌ {message.reply_to_message.from_user.mention_html()} lost moderator privileges.")
     except Exception: pass
 
+        @dp.message(F.text == ".main")
+async def cmd_main_admin(message: Message):
+    # Buyruq bergan odam admin ekanligini va biror xabarga reply qilinganini tekshirish
+    if not await is_admin(message) or not message.reply_to_message: 
+        return
+        
+    target_user = message.reply_to_message.from_user
+    
+    try:
+        # Anonimlikdan tashqari barcha adminlik huquqlarini berish
+        await bot.promote_chat_member(
+            chat_id=message.chat.id, 
+            user_id=target_user.id,
+            is_anonymous=False,              # Anonim bo'lmaydi (Ismi ko'rinib turadi)
+            can_manage_chat=True,            # Guruhni boshqarish
+            can_delete_messages=True,        # Xabarlarni o'chirish
+            can_restrict_members=True,       # A'zolarni bloklash/mut qilish
+            can_promote_members=True,        # Yangi adminlar qo'shish
+            can_invite_users=True,           # Guruhga odam qo'shish (Taklif qilish)
+            can_change_info=True,            # Guruh ma'lumotlarini o'zgartirish
+            can_post_stories=True,           # Hikoyalar joylash (Guruh nomidan)
+            can_edit_stories=True,
+            can_delete_stories=True
+        )
+        await message.answer(
+            f"👑 {target_user.mention_html()} guruhning **Asosiy Admini (.main)** etib tayinlandi!\n"
+            f"⚠️ *Xavfsizlik uchun anonimlik huquqi berilmadi.*"
+        )
+    except Exception as e:
+        await message.answer("❌ Botda ushbu huquqlarni berish uchun ruxsat yetarli emas (Bot o'zi to'liq admin bo'lishi kerak).")
+
+        @dp.message(F.text == ".unmain")
+async def cmd_unmain_admin(message: Message):
+    # Buyruq bergan odam admin ekanligini va biror xabarga reply qilinganini tekshirish
+    if not await is_admin(message) or not message.reply_to_message: 
+        return
+        
+    target_user = message.reply_to_message.from_user
+    
+    try:
+        # Barcha adminlik huquqlarini False qilish orqali bekor qilish
+        await bot.promote_chat_member(
+            chat_id=message.chat.id, 
+            user_id=target_user.id,
+            is_anonymous=False,
+            can_manage_chat=False,
+            can_delete_messages=False,
+            can_restrict_members=False,
+            can_promote_members=False,
+            can_invite_users=False,
+            can_change_info=False,
+            can_post_stories=False,
+            can_edit_stories=False,
+            can_delete_stories=False
+        )
+        await message.answer(f"❌ {target_user.mention_html()} ning barcha bosh adminlik (.main) huquqlari bekor qilindi va u oddiy a'zoga aylantirildi.")
+    except Exception:
+        await message.answer("❌ Botda ushbu huquqlarni bekor qilish uchun ruxsat yetarli emas.")
+
+
 
 # ==================== MODERATION & PUNISHMENT ====================
 
@@ -142,6 +202,8 @@ async def cmd_unmute(message: Message):
         await message.answer(f"🔊 {message.reply_to_message.from_user.mention_html()} has been unmuted!")
     except Exception: pass
 
+# ==================== WARNINGS & OTHER COMMANDS ====================
+
 @dp.message(F.text == ".warn")
 async def cmd_warn(message: Message):
     if not await is_admin(message) or not message.reply_to_message: return
@@ -152,17 +214,17 @@ async def cmd_warn(message: Message):
         try:
             permissions = ChatPermissions(can_send_messages=False, can_send_media_messages=False)
             await bot.restrict_chat_member(chat_id=message.chat.id, user_id=user_id, permissions=permissions, until_date=datetime.now() + timedelta(days=1))
-            await message.answer(f"🚨 {message.reply_to_message.from_user.mention_html()} reached 3 warns and has been muted for 24 hours!")
+            await message.answer(f"🚨 {message.reply_to_message.from_user.mention_html()} 3 ta ogohlantirish oldi va 24 soatga mut qilindi!")
         except Exception: pass
     else:
-        await message.answer(f"⚠️ {message.reply_to_message.from_user.mention_html()} received a warning! Total: {warns_db[user_id]}/3")
+        await message.answer(f"⚠️ {message.reply_to_message.from_user.mention_html()} ogohlantirish oldi! Jami: {warns_db[user_id]}/3")
 
 @dp.message(F.text == ".unwarn")
 async def cmd_unwarn(message: Message):
     if not await is_admin(message) or not message.reply_to_message: return
     user_id = message.reply_to_message.from_user.id
     warns_db[user_id] = 0
-    await message.answer(f"✅ Warnings for {message.reply_to_message.from_user.mention_html()} have been reset!")
+    await message.answer(f"✅ {message.reply_to_message.from_user.mention_html()} ning ogohlantirishlari nolga tushirildi!")
 
 @dp.message(F.text == ".del")
 async def cmd_del(message: Message):
@@ -177,7 +239,7 @@ async def cmd_ban(message: Message):
     if not await is_admin(message) or not message.reply_to_message: return
     try:
         await bot.ban_chat_member(chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id)
-        await message.answer(f"🚷 {message.reply_to_message.from_user.mention_html()} has been banned from the club!")
+        await message.answer(f"🚷 {message.reply_to_message.from_user.mention_html()} klubdan haydaldi (Ban)!")
     except Exception: pass
 
 @dp.message(F.text == ".unban")
@@ -185,8 +247,7 @@ async def cmd_unban(message: Message):
     if not await is_admin(message) or not message.reply_to_message: return
     try:
         await bot.unban_chat_member(chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id)
-        await message.answer(f"🔓 {message.reply_to_message.from_user.mention_html()} has been unbanned!")
-    except Exception: pass
+        await message.answer(f"🔓 {message.reply_to_message.from_user.mention_html()} bandan chiqarildi!")
 
 
 # ==================== ADVANCED & INTERACTIVE CONTROLS ====================
@@ -197,7 +258,7 @@ async def cmd_night(message: Message):
     permissions = ChatPermissions(can_send_messages=False, can_send_media_messages=False, can_send_other_messages=False)
     try:
         await bot.set_chat_permissions(chat_id=message.chat.id, permissions=permissions)
-        await message.answer(f"🌃 **The city falls asleep... (Night Mode ON)**\nChat locked by {message.from_user.mention_html()}. Keep silence! 🤐")
+        await message.answer(f"🌃 **Shahar uyquga ketmoqda... (Tungi rejim YOQILDI)**\nChat {message.from_user.mention_html()} tomonidan qulflandi. Jimjitlik saqlang! 🤐")
     except Exception: pass
 
 @dp.message(F.text == ".day")
@@ -206,41 +267,146 @@ async def cmd_day(message: Message):
     permissions = ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_polls=True, can_send_other_messages=True)
     try:
         await bot.set_chat_permissions(chat_id=message.chat.id, permissions=permissions)
-        await message.answer(f"🌅 **The sun rises! The city wakes up... (Night Mode OFF)**\nChat opened by {message.from_user.mention_html()}. Discuss the game! 💬")
+        await message.answer(f"🌅 **Quyosh chiqdi! Shahar uyg'onmoqda... (Tungi rejim O'CHIRILDI)**\nChat {message.from_user.mention_html()} tomonidan ochildi. O'yinni muhokama qilishingiz mumkin! 💬")
     except Exception: pass
 
-# ==================== CHANNELS ====================
+
+# ==================== CHANNELS & HELP ====================
 
 @dp.message(F.text == ".channels")
 async def cmd_channels(message: Message):
     await message.answer(
-        "⛓ @mafia_uzbekis Official Club Projects:\n\n"
+        "⛓ @mafia_uzbekis Rasmiy Klub Loyihalari:\n\n"
         "📜 Qoidalar kanali — O'yin shartlari va qonunlar.\n"
         "📸 Zapallar kanali — Qiziqarli lahzalar va fosh etishlar."
     )
 
-
-# ==================== HELP ====================
-
 @dp.message(F.text == ".help")
 async def cmd_help_list(message: Message):
     await message.answer(
-        "🕵️‍♂️ @mafia_uzbekis Bot Commands List:\n\n"
-        "👑 Admin Management:\n"
+        "🕵️‍♂️ @mafia_uzbekis Bot Buyruqlar Ro'yxati:\n\n"
+        "👑 Adminlarni boshqarish:\n"
         "🔹 .admin / .unadmin\n"
         "🔹 .muter / .unmuter\n"
         "🔹 .moderator / .unmoderator\n\n"
-        "🚫 Moderation & Punishment:\n"
-        "🔹 .mute [time] [reason] / .unmute\n"
+        "🚫 Moderatsiya va jazo:\n"
+        "🔹 .mute [vaqt] [sabab] / .unmute\n"
         "🔹 .warn / .unwarn\n"
         "🔹 .ban / .unban\n"
         "🔹 .del\n\n"
-        "⚙️ Group Controls & Fun:\n"
+        "⚙️ Guruh boshqaruvi va o'yin:\n"
         "🔹 .night / .day\n"
         "🔹 .channels\n"
         "🔹 .shoot\n"
         "🔹 .check"
+            "👑 Adminlarni boshqarish:\n"
+        "🔹 .main / .unmain (To'liq adminlikni boshqarish)\n"
+        "🔹 .admin / .unadmin\n"
     )
+
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+
+# Xabarlar soni va birinchi ko'rilgan vaqtni saqlash uchun baza (Kodni tepasiga qo'shing)
+# warns_db = {} qatori tagiga yoziladi:
+messages_db = {}  
+
+# Har bir yozilgan xabarni hisoblab borish uchun umumiy handler
+@dp.message(F.chat.type.in_({"supergroup", "group"}))
+async def track_user_messages(message: Message):
+    # Agar xabar buyruq bo'lsa, uni hisoblamaslik uchun tekshiruv
+    if message.text and message.text.startswith("."):
+        return
+        
+    user_id = message.from_user.id
+    current_time = datetime.now().strftime("%d.%m.%Y")
+    
+    if user_id not in messages_db:
+        messages_db[user_id] = {"count": 1, "joined": current_time}
+    else:
+        messages_db[user_id]["count"] += 1
+
+
+# ==================== .INFO BUYRUG'I ====================
+
+@dp.message(F.text == ".info")
+async def cmd_info(message: Message):
+    # Agar reply bo'lsa o'sha odamni, bo'lmasa buyruq bergan odamning o'zini tekshiradi
+    target_user = message.reply_to_message.from_user if message.reply_to_message else message.from_user
+    user_id = target_user.id
+    
+    # Guruhdagi holatini olish (Admin, Muted, oddiy a'zo)
+    member = await message.chat.get_member(user_id)
+    status_str = "Foydalanuvchi"
+    is_muted = False
+    
+    if member.status in [ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR]:
+        status_str = "👑 Admin / Moderator"
+    elif member.status == ChatMemberStatus.RESTRICTED:
+        # Agar xabar yozish huquqi o'chirilgan bo'lsa demak u mute qilingan
+        if not member.can_send_messages:
+            status_str = "🤫 Mute qilingan (Muted)"
+            is_muted = True
+        else:
+            status_str = "⚠️ Cheklangan a'zo"
+            
+    # Ma'lumotlarni bazadan o'qish
+    user_data = messages_db.get(user_id, {"count": 0, "joined": datetime.now().strftime("%d.%m.%Y")})
+    warn_count = warns_db.get(user_id, 0)
+    
+    info_text = (
+        f"👤 **Foydalanuvchi ma'lumotlari:**\n\n"
+        f"📝 **Niki:** {target_user.mention_html()}\n"
+        f"🆔 **ID:** <code>{user_id}</code>\n"
+        f"📅 **Qo'shilgan vaqti:** {user_data['joined']}\n"
+        f"💬 **Xabarlar soni:** {user_data['count']} ta\n"
+        f"⚠️ **Ogohlantirishlar (Warn):** {warn_count}/3\n"
+        f"⚙️ **Hozirgi holati:** {status_str}"
+    )
+    
+    # Inline tugmalarni yaratish (Faqat adminlar boshqara olishi uchun callback_data tarkibiga target va chat kiritiladi)
+    buttons = []
+    if is_muted:
+        buttons.append([InlineKeyboardButton(text="🔊 Mutedan chiqarish", callback_data=f"unmute:{user_id}")])
+    else:
+        buttons.append([InlineKeyboardButton(text="🤫 Mute berish (1 soat)", callback_data=f"mute:{user_id}")])
+        
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    await message.answer(info_text, reply_markup=keyboard)
+
+
+# ==================== TUGMALARNI QABUL QILUVCHI (CALLBACK HANDLER) ====================
+
+@dp.callback_query(F.data.startswith("mute:") | F.data.startswith("unmute:"))
+async def handle_info_buttons(callback: CallbackQuery):
+    # Tugmani bosgan odam admin ekanligini tekshirish
+    admin_member = await callback.message.chat.get_member(callback.from_user.id)
+    if admin_member.status not in [ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR]:
+        await callback.answer("❌ Bu tugmadan faqat adminlar foydalana oladi!", show_alert=True)
+        return
+        
+    action, target_id = callback.data.split(":")
+    target_id = int(target_id)
+    
+    try:
+        if action == "mute":
+            # 1 soatga mute qilish huquqlari
+            permissions = ChatPermissions(can_send_messages=False, can_send_media_messages=False, can_send_other_messages=False)
+            until_date = datetime.now() + timedelta(hours=1)
+            await callback.bot.restrict_chat_member(chat_id=callback.message.chat.id, user_id=target_id, permissions=permissions, until_date=until_date)
+            await callback.message.answer(f"🤫 Foydalanuvchi admin tomonidan inline tugma orqali 1 soatga mut qilindi.")
+            
+        elif action == "unmute":
+            # Mutedan chiqarish (barcha huquqlarni qaytarish)
+            permissions = ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_polls=True, can_send_other_messages=True)
+            await callback.bot.restrict_chat_member(chat_id=callback.message.chat.id, user_id=target_id, permissions=permissions)
+            await callback.message.answer(f"🔊 Foydalanuvchi admin tomonidan inline tugma orqali mutdan chiqarildi.")
+            
+        # Tugma bosilgandan keyin yuklanish effektini yo'qotish va oynani yopish
+        await callback.answer("Muvaffaqiyatli bajarildi!")
+        await callback.message.delete() # eski ma'lumotlar oynasini o'chirib tashlaydi
+        
+    except Exception as e:
+        await callback.answer(f"Xatolik yuz berdi yoki botda adminlik huquqi kam.", show_alert=True)
 
 
 # ==================== FUN COMMANDS ====================
@@ -248,59 +414,56 @@ async def cmd_help_list(message: Message):
 @dp.message(F.text == ".shoot")
 async def cmd_shoot(message: Message):
     if not message.reply_to_message:
-        await message.reply(
-            "❓ Reply to someone's message to shoot them."
-        )
+        await message.reply("❓ Kimnidir otish uchun uning xabariga reply (javob) qiling.")
         return
-
     target = message.reply_to_message.from_user.mention_html()
     admin = message.from_user.mention_html()
-
-    await message.answer(
-        f"🕵️‍♂️ By the order of Mafia Don {admin}, "
-        f"a silent bullet hit {target}... 🔫💀"
-    )
-
+    await message.answer(f"🕵️‍♂️ Mafiya Doni {admin} buyrug'iga ko'ra, ovozsiz o'q {target}ga tegdi... 🔫💀")
 
 @dp.message(F.text == ".check")
 async def cmd_check(message: Message):
     if not message.reply_to_message:
-        await message.reply(
-            "❓ Reply to someone's message to investigate their role."
-        )
+        await message.reply("❓ Kimning rolini tekshirishni xohlasangiz, uning xabariga reply qiling.")
         return
-
     target = message.reply_to_message.from_user.mention_html()
-
-    roles = [
-        "🔴 BLACK (Mafia)",
-        "⚪️ WHITE (Citizen)",
-        "🔴 BLACK (Don Mafia)",
-        "🔵 BLUE (Doctor)"
-    ]
-
+    roles = ["🔴 QIZIL (Mafiya)", "⚪️ OQ (Tinch aholi)", "🔴 QIZIL (Don Mafiya)", "🔵 KO'K (Shifokor)"]
     chosen_role = random.choice(roles)
-
-    await message.answer(
-        f"🔍 Detective investigated {target} tonight...\n"
-        f"Result: {chosen_role}"
-    )
+    await message.answer(f"🔍 Komissar bugun tunda {target}ni tekshirdi...\nNatija: {chosen_role}")
 
 
-# ==================== SERVER ====================
+# ==================== TO'G'RI WEBHOOK SERVERI ====================
 
+# cron-job.org uchun maxsus ping sahifasi (Asosiy sahifaga kirganda ishlaydi)
+async def handle_ping(request):
+    return web.Response(text="Mafia Bot muvaffaqiyatli ishlayapti!", status=200)
+
+# Bot ishga tushganda eski webhooklarni o'chirish va yangisini bog'lash funksiyasi
 async def on_startup(bot: Bot) -> None:
-    await bot.delete_webhook(drop_pending_updates=True)
-    asyncio.create_task(dp.start_polling(bot))
+    # Render'dagi botiingiz manzili (oxiriga /webhook qo'shiladi)
+    webhook_url = "https://onrender.com"
+    await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
+    logging.info(f"Webhook o'rnatildi: {webhook_url}")
 
 def main():
     app = web.Application()
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
+    
+    # Telegramdan keladigan POST xabarlar uchun yo'lakcha (/webhook)
+    webhook_requests_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
+    webhook_requests_handler.register(app, path="/webhook")
+    
+    # cron-job.org uchun asosiy sahifaga kirganda ishlaydigan GET yo'lakchasi
+    app.router.add_get("/", handle_ping)
+    
+    # Aiogramni aiohttp bilan bog'lash
     setup_application(app, dp, bot=bot)
+    
+    # Startup funksiyasini qo'shish
     app.on_startup.append(lambda _: on_startup(bot))
-
+    
+    # Render'da odatda port 10000 yoki o'zgaruvchida keladi
     port = int(os.getenv("PORT", 10000))
     web.run_app(app, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
     main()
+
