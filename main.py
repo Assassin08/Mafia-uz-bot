@@ -22,6 +22,9 @@ dp = Dispatcher()
 warns_db = {}
 
 async def is_admin(message: Message) -> bool:
+    # Guruh nomidan yozgan anonim adminlarni ham to'g'ri tekshirish qo'shildi
+    if message.sender_chat and message.sender_chat.id == message.chat.id:
+        return True
     member = await message.chat.get_member(message.from_user.id)
     return member.status in [ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR]
 
@@ -182,7 +185,8 @@ async def cmd_mute(message: Message):
     permissions = ChatPermissions(can_send_messages=False, can_send_media_messages=False, can_send_other_messages=False)
     
     # Vaqt cheklovini hisoblash (Maksimal 365 kun xavfsizlik uchun)
-    until_date = datetime.now() + duration if duration else None
+      # Render serveri vaqti Telegram serverlari bilan moslashtirildi
+    until_date = datetime.utcnow() + duration if duration else None
     
     try:
         await bot.restrict_chat_member(chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id, permissions=permissions, until_date=until_date)
@@ -373,7 +377,8 @@ async def cmd_info(message: Message):
         buttons.append([InlineKeyboardButton(text="🤫 Mute berish (1 soat)", callback_data=f"mute:{user_id}")])
         
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await message.answer(info_text, reply_markup=keyboard)
+    # Bot crash bo'lib o'chib qolmasligi uchun HTML formatlash yoqildi
+    await message.answer(info_text, reply_markup=keyboard, parse_mode="HTML")
 
 
 # ==================== TUGMALARNI QABUL QILUVCHI (CALLBACK HANDLER) ====================
@@ -397,19 +402,14 @@ async def handle_info_buttons(callback: CallbackQuery):
             await callback.bot.restrict_chat_member(chat_id=callback.message.chat.id, user_id=target_id, permissions=permissions, until_date=until_date)
             await callback.message.answer(f"🤫 Foydalanuvchi admin tomonidan inline tugma orqali 1 soatga mut qilindi.")
             
-        elif action == "unmute":
-            # Mutedan chiqarish (barcha huquqlarni qaytarish)
-            permissions = ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_polls=True, can_send_other_messages=True)
-            await callback.bot.restrict_chat_member(chat_id=callback.message.chat.id, user_id=target_id, permissions=permissions)
-            await callback.message.answer(f"🔊 Foydalanuvchi admin tomonidan inline tugma orqali mutdan chiqarildi.")
-            
-        # Tugma bosilgandan keyin yuklanish effektini yo'qotish va oynani yopish
-        await callback.answer("Muvaffaqiyatli bajarildi!")
-        await callback.message.delete() # eski ma'lumotlar oynasini o'chirib tashlaydi
-        
-    except Exception as e:
-        await callback.answer(f"Xatolik yuz berdi yoki botda adminlik huquqi kam.", show_alert=True)
-
+@dp.message(F.text == ".unmute")
+async def cmd_unmute(message: Message):
+    if not await is_admin(message) or not message.reply_to_message: return
+    permissions = ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_polls=True, can_send_other_messages=True)
+    try:
+        await bot.restrict_chat_member(chat_id=message.chat.id, user_id=message.reply_to_message.from_user.id, permissions=permissions)
+        await message.answer(f"🔊 {message.reply_to_message.from_user.mention_html()} has been unmuted!", parse_mode="HTML")
+    except Exception: pass  # <-- MANA SHU YOPUVCHI BLOK TUSHIB QOLGAN EDI
 
 # ==================== FUN COMMANDS ====================
 
@@ -420,7 +420,8 @@ async def cmd_shoot(message: Message):
         return
     target = message.reply_to_message.from_user.mention_html()
     admin = message.from_user.mention_html()
-    await message.answer(f"🕵️‍♂️ Mafiya Doni {admin} buyrug'iga ko'ra, ovozsiz o'q {target}ga tegdi... 🔫💀")
+    await message.answer(f"🕵️‍♂️ Mafiya Doni {admin} buyrug'iga ko'ra, ovozsiz o'q {target}ga tegdi... 🔫💀", parse_mode="HTML")
+
 
 @dp.message(F.text == ".crush")
 async def cmd_crush(message: Message):
