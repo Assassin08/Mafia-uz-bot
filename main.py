@@ -464,7 +464,7 @@ async def handle_ping(request):
 
 async def on_startup(bot: Bot) -> None:
     # TO'G'RI SHAXSIY WEBHOOK MANZILI O'RNATILDI:
-    webhook_url = "https://onrender.com"
+    webhook_url = "https://mafia-uz-bot.onrender.com"
     await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
     logging.info(f"Webhook o'rnatildi: {webhook_url}")
 
