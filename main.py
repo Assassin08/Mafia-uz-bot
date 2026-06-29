@@ -424,29 +424,22 @@ async def cmd_shoot(message: Message):
 
 @dp.message(F.text == ".crush")
 async def cmd_crush(message: Message):
-    # Agar hech kimga reply qilinmagan bo'lsa, ogohlantirish beradi
     if not message.reply_to_message:
-        await message.reply(
-            "❓ Kimnidir yaxshi ko'rishingizni aytish uchun uning xabariga reply (javob) qiling."
-        )
+        await message.reply("❓ Kimnidir yaxshi ko'rishingizni aytish uchun uning xabariga reply (javob) qiling.")
         return
 
-    # Buyruq bergan va reply qilingan foydalanuvchilar niki
     lover = message.from_user.mention_html()
     target = message.reply_to_message.from_user.mention_html()
 
-    # Agar foydalanuvchi o'ziga o'zi reply qilsa
     if message.from_user.id == message.reply_to_message.from_user.id:
         await message.answer(f"❤️ {lover} o'z-o'ziga oshiq bo'lib qoldi! Narsissizm ham kerak-da... 😂")
         return
 
-    # Guruhga yuboriladigan chiroyli matn
     await message.answer(
         f"💘 Ohho, guruhimizda yangi juftlikmi?\n\n"
         f"💞 {lover} kutilmaganda {target} ga oshiq bo'lib qoldi! 😍✨\n"
         f"Baxtli bo'linglar! 🥳"
     )
-
 
 @dp.message(F.text == ".check")
 async def cmd_check(message: Message):
@@ -459,15 +452,27 @@ async def cmd_check(message: Message):
     await message.answer(f"🔍 Komissar bugun tunda {target}ni tekshirdi...\nNatija: {chosen_role}")
 
 
-# ==================== TO'G'RI WEBHOOK SERVERI ====================
+# ==================== MESSAGE TRACKER (HAR DOIM SHU YERDA TURISHI KERAK) ====================
 
-# cron-job.org uchun maxsus ping sahifasi (Asosiy sahifaga kirganda ishlaydi)
+@dp.message(F.chat.type.in_({"supergroup", "group"}))
+async def track_user_messages(message: Message):
+    if message.text and message.text.startswith("."):
+        return
+    user_id = message.from_user.id
+    current_time = datetime.now().strftime("%d.%m.%Y")
+    if user_id not in messages_db:
+        messages_db[user_id] = {"count": 1, "joined": current_time}
+    else:
+        messages_db[user_id]["count"] += 1
+
+
+# ==================== SERVER CORE ====================
+
 async def handle_ping(request):
     return web.Response(text="Mafia Bot muvaffaqiyatli ishlayapti!", status=200)
 
-# Bot ishga tushganda eski webhooklarni o'chirish va yangisini bog'lash funksiyasi
 async def on_startup(bot: Bot) -> None:
-    # Render'dagi botiingiz manzili (oxiriga /webhook qo'shiladi)
+    # TO'G'RI SHAXSIY WEBHOOK MANZILI O'RNATILDI:
     webhook_url = "https://onrender.com"
     await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
     logging.info(f"Webhook o'rnatildi: {webhook_url}")
@@ -475,23 +480,16 @@ async def on_startup(bot: Bot) -> None:
 def main():
     app = web.Application()
     
-    # Telegramdan keladigan POST xabarlar uchun yo'lakcha (/webhook)
     webhook_requests_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
     webhook_requests_handler.register(app, path="/webhook")
     
-    # cron-job.org uchun asosiy sahifaga kirganda ishlaydigan GET yo'lakchasi
     app.router.add_get("/", handle_ping)
     
-    # Aiogramni aiohttp bilan bog'lash
     setup_application(app, dp, bot=bot)
-    
-    # Startup funksiyasini qo'shish
     app.on_startup.append(lambda _: on_startup(bot))
     
-    # Render'da odatda port 10000 yoki o'zgaruvchida keladi
     port = int(os.getenv("PORT", 10000))
     web.run_app(app, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
     main()
-
