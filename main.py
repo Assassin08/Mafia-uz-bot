@@ -341,11 +341,20 @@ async def cmd_info(message: Message):
 async def handle_info_buttons(callback: CallbackQuery):
     admin_member = await callback.message.chat.get_member(callback.from_user.id)
     if admin_member.status not in [ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR]:
-        await callback.answer("❌ Bu tugmadan faqat adminlar foydalana oladi!", show_alert=True)
+        await callback.answer("❌ Bu tugma faqat guruh adminlari uchun!", show_alert=True)
         return
         
-    action, target_id = callback.data.split(":")
-    target_id = int(target_id)
+    data_parts = callback.data.split(":", maxsplit=1)
+    if len(data_parts) < 2:
+        await callback.answer("❌ Ma'lumot xato formatda!", show_alert=True)
+        return
+        
+    action = data_parts[0]
+    try:
+        target_id = int(data_parts[1])
+    except ValueError:
+        await callback.answer("❌ ID xato formatda!", show_alert=True)
+        return
     
     try:
         if action == "mute":
@@ -357,6 +366,7 @@ async def handle_info_buttons(callback: CallbackQuery):
             permissions = ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_polls=True, can_send_other_messages=True)
             await callback.bot.restrict_chat_member(chat_id=callback.message.chat.id, user_id=target_id, permissions=permissions)
             await callback.message.answer(f"🔊 Foydalanuvchi admin tomonidan inline tugma orqali mutdan chiqarildi.")
+        
         await callback.answer("Muvaffaqiyatli bajarildi!")
         await callback.message.delete()
     except Exception:
